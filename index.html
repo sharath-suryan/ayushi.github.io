@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Map with GeoJSON Layers and Filters</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <style>
+        #map { height: 800px; width: 100%; }
+        .filter-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: white;
+            padding: 10px;
+            z-index: 1000;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            max-height: 95vh;
+            overflow-y: auto;
+            max-width: 350px;
+        }
+        .small-break {
+            margin-top: 8.5px; /* Adjust this value to control the spacing */
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="filter-controls">
+        <label for="wasteGenerator">Waste Generator Type:</label>
+        <select id="wasteGenerator" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="Household">Household</option>
+            <option value="University/College/School/Anganwadi">University/College/School/Anganwadi</option>
+            <option value="Shop (Permanent Structure)">Shop (Permanent Structure)</option>
+            <option value="Street Vendor (Temporary/Movable Structure)">Street Vendor (Temporary/Movable Structure)</option>
+            <option value="Meat Shop">Meat Shop</option>
+            <option value="Hostel/PG/Hotels/Lodge">Hostel/PG/Hotels/Lodge</option>
+            <option value="Other">Other</option>
+            <option value="Petrol pump">Petrol pump</option>
+        </select>
+        <div class="small-break"></div>
+
+
+        <label for="wasteType">Waste Type:</label>
+        <select id="wasteType" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="Wet waste">Wet waste</option>
+            <option value="Dry waste">Dry waste</option>
+            <option value="Sanitary waste">Sanitary waste</option>
+            <option value="Medical waste">Medical waste</option>
+            <option value="Construction waste">Construction waste</option>
+        </select>
+        <div class="small-break"></div>
+
+        <label for="bulkWasteGenerator">Bulk Waste Generator:</label>
+        <select id="bulkWasteGenerator" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+        </select>
+        <div class="small-break"></div>
+
+        <label for="wasteKgsRange">Waste in Kgs:</label>
+        <input type="range" id="wasteKgsRange" min="0" max="100" step="5" oninput="showRangeValue(this.value, 'rangeValue')">
+        <span id="rangeValue">100</span> kg<br>
+
+        <label for="wetWasteDisposal">Wet Waste Disposal Method:</label>
+        <select id="wetWasteDisposal" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="Give to the panchayat waste collector">Give to the panchayat waste collector</option>
+            <option value="Dump/Burn">Dump/Burn</option>
+            <option value="Composting">Composting</option>
+            <option value="Give it/ Sell it to scrap dealers, Raddiwalas, Gujri, Paper-walas">Give it/ Sell it to scrap dealers, Raddiwalas, Gujri, Paper-walas</option>
+            <option value="Litter/Throw">Litter/Throw</option>
+            <option value="Bury">Bury</option>
+            <option value="Other">Other</option>
+            <option value="Give to a Private Waste Collector">Give to a Private Waste Collector</option>
+            <option value="NA (No such waste generated)">NA (No such waste generated)</option>
+            <option value="Someone else takes it (contractor or private tractor/trolley person). We don't know what happens after">Someone else takes it (contractor or private tractor/trolley person). We don't know what happens after</option>
+            <option value="Throw in the garden/field/Tota">Throw in the garden/field/Tota</option>
+            <option value="Feed it to the livestock (Cow, Goats, Sheep, Pigs, etc.)">Feed it to the livestock (Cow, Goats, Sheep, Pigs, etc.)</option>
+        </select>
+        <div class="small-break"></div>
+
+        <label for="WetwasteKgsRange">Wet Waste in Kgs:</label>
+        <input type="range" id="WetwasteKgsRange" min="0" max="100" step="5" oninput="showRangeValue(this.value, 'rangeValueWet')">
+        <span id="rangeValueWet">100</span> kg
+        <div class="small-break"></div>
+
+        <label for="dryWasteDisposal">Dry Waste Disposal Method:</label>
+        <select id="dryWasteDisposal" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="Give to the panchayat waste collector">Give to the panchayat waste collector</option>
+            <option value="Dump/Burn">Dump/Burn</option>
+            <option value="Composting">Composting</option>
+            <option value="Give it/ Sell it to scrap dealers, Raddiwalas, Gujri, Paper-walas">Give it/ Sell it to scrap dealers, Raddiwalas, Gujri, Paper-walas</option>
+            <option value="Litter/Throw">Litter/Throw</option>
+            <option value="Bury">Bury</option>
+            <option value="Other">Other</option>
+            <option value="Give to a Private Waste Collector">Give to a Private Waste Collector</option>
+            <option value="NA (No such waste generated)">NA (No such waste generated)</option>
+            <option value="Someone else takes it (contractor or private tractor/trolley person). We don't know what happens after">Someone else takes it (contractor or private tractor/trolley person). We don't know what happens after</option>
+            <option value="Throw in the garden/field/Tota">Throw in the garden/field/Tota</option>
+            <option value="Feed it to the livestock (Cow, Goats, Sheep, Pigs, etc.)">Feed it to the livestock (Cow, Goats, Sheep, Pigs, etc.)</option>
+        </select>
+        <div class="small-break"></div>
+
+
+        <label for="DrywasteKgsRange">Dry Waste in Kgs:</label>
+        <input type="range" id="DrywasteKgsRange" min="0" max="100" step="5" oninput="showRangeValue(this.value, 'rangeValueDry')">
+        <span id="rangeValueDry">100</span> kg
+        <div class="small-break"></div>
+
+        <label for="medicalWasteDisposal">Medical Waste Disposal Method:</label>
+        <select id="medicalWasteDisposal" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="Give to the panchayat waste collector">Give to the panchayat waste collector</option>
+            <option value="Dump/Burn">Dump/Burn</option>
+            <option value="Composting">Composting</option>
+            <option value="Give it/ Sell it to scrap dealers, Raddiwalas, Gujri, Paper-walas">Give it/ Sell it to scrap dealers, Raddiwalas, Gujri, Paper-walas</option>
+            <option value="Litter/Throw">Litter/Throw</option>
+            <option value="Bury">Bury</option>
+            <option value="Other">Other</option>
+            <option value="Give to a Private Waste Collector">Give to a Private Waste Collector</option>
+            <option value="NA (No such waste generated)">NA (No such waste generated)</option>
+            <option value="Someone else takes it (contractor or private tractor/trolley person). We don't know what happens after">Someone else takes it (contractor or private tractor/trolley person). We don't know what happens after</option>
+            <option value="Throw in the garden/field/Tota">Throw in the garden/field/Tota</option>
+            <option value="Feed it to the livestock (Cow, Goats, Sheep, Pigs, etc.)">Feed it to the livestock (Cow, Goats, Sheep, Pigs, etc.)</option>
+        </select>
+        <div class="small-break"></div>
+
+        <label for="hazardousWasteDisposal">Hazardous/Chemical Waste Disposal Method:</label>
+        <select id="hazardousWasteDisposal" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="Give to the panchayat waste collector">Give to the panchayat waste collector</option>
+            <option value="Dump/Burn">Dump/Burn</option>
+            <option value="Composting">Composting</option>
+            <option value="Give it/ Sell it to scrap dealers, Raddiwalas, Gujri, Paper-walas">Give it/ Sell it to scrap dealers, Raddiwalas, Gujri, Paper-walas</option>
+            <option value="Litter/Throw">Litter/Throw</option>
+            <option value="Bury">Bury</option>
+            <option value="Other">Other</option>
+            <option value="Give to a Private Waste Collector">Give to a Private Waste Collector</option>
+            <option value="NA (No such waste generated)">NA (No such waste generated)</option>
+            <option value="Someone else takes it (contractor or private tractor/trolley person). We don't know what happens after">Someone else takes it (contractor or private tractor/trolley person). We don't know what happens after</option>
+            <option value="Throw in the garden/field/Tota">Throw in the garden/field/Tota</option>
+            <option value="Feed it to the livestock (Cow, Goats, Sheep, Pigs, etc.)">Feed it to the livestock (Cow, Goats, Sheep, Pigs, etc.)</option>
+        </select>
+        <div class="small-break"></div>
+
+        <label for="eWasteDisposal">E-Waste Disposal Method:</label>
+        <select id="eWasteDisposal" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="Give to the panchayat waste collector">Give to the panchayat waste collector</option>
+            <option value="Dump/Burn">Dump/Burn</option>
+            <option value="Composting">Composting</option>
+            <option value="Give it/ Sell it to scrap dealers, Raddiwalas, Gujri, Paper-walas">Give it/ Sell it to scrap dealers, Raddiwalas, Gujri, Paper-walas</option>
+            <option value="Litter/Throw">Litter/Throw</option>
+            <option value="Bury">Bury</option>
+            <option value="Other">Other</option>
+            <option value="Give to a Private Waste Collector">Give to a Private Waste Collector</option>
+            <option value="NA (No such waste generated)">NA (No such waste generated)</option>
+            <option value="Someone else takes it (contractor or private tractor/trolley person). We don't know what happens after">Someone else takes it (contractor or private tractor/trolley person). We don't know what happens after</option>
+            <option value="Throw in the garden/field/Tota">Throw in the garden/field/Tota</option>
+            <option value="Feed it to the livestock (Cow, Goats, Sheep, Pigs, etc.)">Feed it to the livestock (Cow, Goats, Sheep, Pigs, etc.)</option>
+        </select>
+        <div class="small-break"></div>
+
+        <label for="constructionWasteDisposal">Construction/Demolition Waste Disposal Method:</label>
+        <select id="constructionWasteDisposal" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="Give to the panchayat waste collector">Give to the panchayat waste collector</option>
+            <option value="Dump/Burn">Dump/Burn</option>
+            <option value="Composting">Composting</option>
+            <option value="Give it/ Sell it to scrap dealers, Raddiwalas, Gujri, Paper-walas">Give it/ Sell it to scrap dealers, Raddiwalas, Gujri, Paper-walas</option>
+            <option value="Litter/Throw">Litter/Throw</option>
+            <option value="Bury">Bury</option>
+            <option value="Other">Other</option>
+            <option value="Give to a Private Waste Collector">Give to a Private Waste Collector</option>
+            <option value="NA (No such waste generated)">NA (No such waste generated)</option>
+            <option value="Someone else takes it (contractor or private tractor/trolley person). We don't know what happens after">Someone else takes it (contractor or private tractor/trolley person). We don't know what happens after</option>
+            <option value="Throw in the garden/field/Tota">Throw in the garden/field/Tota</option>
+            <option value="Feed it to the livestock (Cow, Goats, Sheep, Pigs, etc.)">Feed it to the livestock (Cow, Goats, Sheep, Pigs, etc.)</option>
+        </select>
+        <div class="small-break"></div>
+
+        <label for="wasteSoldToKabadi">Waste Sold to Kabadi Walas/ Gujri / Bhangarwalas / Pheriwalas / Raddiwalas?</label>
+        <select id="wasteSoldToKabadi" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="Sometimes, but not always">Sometimes, but not always</option>
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+            <option value="No Data">No Data</option>
+            <option value="Unclear">Unclear</option>
+        </select>
+        <div class="small-break"></div>
+
+        <label for="organicWasteComposting">Potential houses for organic waste composting:</label>
+        <select id="organicWasteComposting" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+        </select>
+        <div class="small-break"></div>
+
+        <label for="panchayatWasteKnowledge">Knowledge on Panchayat Waste Disposal Method and Location:</label>
+        <select id="panchayatWasteKnowledge" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="The vehicle dumps it somewhere in the Village or Panchayat (I don't know where)">The vehicle dumps it somewhere in the Village or Panchayat (I don't know where)</option>
+            <option value="The vehicle dumps it in an area in Adigara Kalahalli village (The person knows exactly where it is dumped)">The vehicle dumps it in an area in Adigara Kalahalli village (The person knows exactly where it is dumped)</option>
+            <option value="The vehicle dumps it in the water bodies (lakes, drains/channels, water channels)">The vehicle dumps it in the water bodies (lakes, drains/channels, water channels)</option>
+            <option value="The vehicle sells it to someone or it takes it for recycling/composting/segregation (Something good happens to it)">The vehicle sells it to someone or it takes it for recycling/composting/segregation (Something good happens to it)</option>
+            <option value="Don't Know / No Idea">Don't Know / No Idea</option>
+            <option value="Other">Other</option>
+        </select>
+        <div class="small-break"></div>
+
+        <label for="wasteDisposalProblems">Problems Faced with Waste Disposal:</label>
+        <select id="wasteDisposalProblems" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="Tractor doesn't come here">Tractor doesn't come here</option>
+            <option value="Tractor doesn't come daily">Tractor doesn't come daily</option>
+            <option value="Tractor comes very far">Tractor comes very far</option>
+            <option value="We don't know when it comes">We don't know when it comes</option>
+            <option value="Timings doesn't match">Timings doesn't match</option>
+            <option value="Dumping of waste by others around the establishment">Dumping of waste by others around the establishment</option>
+            <option value="No Problem (Don't face any issues)">No Problem (Don't face any issues)</option>
+            <option value="Other">Other</option>
+            <option value="NA">NA</option>
+        </select>
+        <div class="small-break"></div>
+
+
+        <label for="responsibility">Perception of Waste Disposal Responsibility:</label>
+        <select id="responsibility" onchange="filterMarkers()">
+            <option value="">All</option>
+            <option value="Panchayat">Panchayat</option>
+            <option value="Self">Self</option>
+            <option value="No opinion">No opinion</option>
+            <option value="Both">Both</option>
+        </select>
+        <div class="small-break"></div>
+
+
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+    <script>
+        // Define multiple basemaps
+        const openStreetMapStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors', opacity: 0.5
+        });
+
+        const Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+	        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        });
+
+        const openStreetMapTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+        });
+
+        // Initialize the map with a default basemap
+        let map = L.map('map', {
+            center: [12.833771, 77.798746],
+            zoom: 14.5,
+            layers: [openStreetMapStandard] // Set the default basemap
+        });
+
+        let geojsonLayer;
+        let allMarkers = [];
+
+
+        // Layers control for clickable layers
+
+        let baseMaps = {
+
+            "OpenStreetMap Standard": openStreetMapStandard,
+
+            "Esri_WorldImagery": Esri_WorldImagery,
+
+            "OpenStreetMap Topo": openStreetMapTopo,
+
+        };
+
+        // Line 488: Load multiple GeoJSON files into respective layers
+        let geojsonFiles = {
+            "gp.geojson": 'Village geojsons/gp.geojson',
+            "Kaluves_lake.geojson": 'Village geojsons/Kaluves_lake.geojson',
+            "Lakes_grampanchyat.geojson": 'Village geojsons/Lakes_grampanchyat.geojson',
+            "Landfill.geojson": 'Village geojsons/Landfill.geojson',
+            "New Track for Adigarakallahalli.geojson": 'Village geojsons/New Track for Adigarakallahalli.geojson',
+            "New_adhalli_tractor_route.geojson": 'Village geojsons/New_adhalli_tractor_route.geojson',
+            "old_adhallitractor_route.geojson": 'Village geojsons/old_adhallitractor_route.geojson',
+            "Old_buragunte_billapura_route.geojson": 'Village geojsons/Old_buragunte_billapura_route.geojson'
+        };
+
+        // Line 499: Create an empty object to hold the layers for each GeoJSON file
+        let geojsonLayers = {};
+
+        // Line 502: Load each GeoJSON file into its own layer
+        // Line 502: Load each GeoJSON file into its own layer with specific styles
+        Object.keys(geojsonFiles).forEach(fileName => {
+            geojsonLayers[fileName] = L.geoJSON(null, {
+                style: function (feature) {
+                    switch (fileName) {
+                        case 'gp.geojson':
+                            return { color: 'brown', weight: 2, opacity: 0.9, fillOpacity: 0 };
+                        case 'Kaluves_lake.geojson':
+                            return { color: 'darkblue', weight: 2, opacity: 0.9 };
+                        case 'Lakes_grampanchyat.geojson':
+                            return { color: 'lightblue', weight: 2, opacity: 0.9, fillColor: 'blue', fillOpacity: 0.5 };
+                        case 'Landfill.geojson':
+                            return { color: 'red', weight: 2, opacity: 0.9, fillColor: 'red', fillOpacity: 0.9 };
+                        case 'New Track for Adigarakallahalli.geojson':
+                            return { color: 'pink', weight: 2, opacity: 0.9 };
+                        case 'New_adhalli_tractor_route.geojson':
+                            return { color: 'pink', weight: 2, opacity: 0.9 };
+                        case 'old_adhallitractor_route.geojson':
+                            return { color: 'orange', weight: 2, opacity: 0.9 };
+                        case 'Old_buragunte_billapura_route.geojson':
+                            return { color: 'orange', weight: 2, opacity: 0.9 };
+                        default:
+                            return { color: 'black', weight: 2, opacity: 0.9 }; // Default style if no match is found
+                    }
+                }
+            });
+
+            fetch(geojsonFiles[fileName])
+                .then(response => response.json())
+                .then(data => {
+                    geojsonLayers[fileName].addData(data);
+                    geojsonLayers[fileName].addTo(map); // Add each layer to the map by default
+                });
+        });
+
+
+        // Line 522: Existing overlayMaps definition
+        let overlayMaps = {
+            // Insert new GeoJSON layers here
+            "GP Boundary": geojsonLayers['gp.geojson'],
+            "Kaluves Lake": geojsonLayers['Kaluves_lake.geojson'],
+            "Lakes Grampanchyat": geojsonLayers['Lakes_grampanchyat.geojson'],
+            "Landfill": geojsonLayers['Landfill.geojson'],
+            "Adigarakallahalli Track": geojsonLayers['New Track for Adigarakallahalli.geojson'],
+            "New Adhalli Tractor Route": geojsonLayers['New_adhalli_tractor_route.geojson'],
+            "Old Adhalli Billapura Tractor Route": geojsonLayers['old_adhallitractor_route.geojson'],
+            "Old Buragunte Route": geojsonLayers['Old_buragunte_billapura_route.geojson']
+        };
+
+        // Line 535: Add the layer control to the map
+        L.control.layers(baseMaps, overlayMaps, { collapsed: true }).addTo(map);
+
+        // Load the points (waste data)
+
+        // Load the points file (final_data.geojson)
+        fetch('final_data.geojson')
+            .then(response => response.json())
+            .then(data => {
+                geojsonLayer = L.geoJSON(data, {
+                    pointToLayer: function (feature, latlng) {
+                        let color;
+                        switch (feature.properties['Type of Waste Generator']) {
+                            case 'Household':
+                                color = 'blue';
+                                break;
+                            case 'University/College/School/Anganwadi':
+                                color = 'green';
+                                break;
+                            case 'Shop (Permanent Structure)':
+                                color = 'red';
+                                break;
+                            case 'Street Vendor (Temporary/Movable Structure)':
+                                color = 'yellow';
+                                break;
+                            case 'Meat Shop':
+                                color = 'purple';
+                                break;
+                            case 'Hostel/PG/Hotels/Lodge':
+                                color = 'orange';
+                                break;
+                            case 'Other':
+                                color = 'brown';
+                                break;
+                            case 'Petrol pump':
+                                color = 'pink';
+                                break;
+                            default:
+                                color = 'gray'; // Default color for unknown types
+                        }
+
+                        // Create a circle marker instead of an icon
+                        return L.circleMarker(latlng, {
+                            radius: 5, // Adjust the size of the circle
+                            fillColor: color,
+                            color: color, // Outline color (same as fill in this case)
+                            weight: 1, // Border thickness
+                            opacity: 1,
+                            fillOpacity: 0.8 // Transparency of the fill
+                        });
+                    },
+                    onEachFeature: function (feature, layer) {
+                        let popupContent = `
+                            <b>sl no:</b> ${feature.properties['sl no']}<br>
+                            <b>Latitude:</b> ${feature.geometry.coordinates[1]}<br>
+                            <b>Longitude:</b> ${feature.geometry.coordinates[0]}<br>
+                            <b>Village:</b> ${feature.properties['Village']}<br>
+                            <b>Property ID:</b> ${feature.properties['Property ID']}<br>
+                            <b>Survey No. Dishank:</b> ${feature.properties['Survey No. Dishank']}<br>
+                            <b>Name:</b> ${feature.properties['Name']}<br>
+                            <b>Type of Waste Generator:</b> ${feature.properties['Type of Waste Generator']}<br>
+                        `;
+
+                        let type = feature.properties['Type of Waste Generator'];
+
+                        // Exclude specific properties for "Household" and "Hostel/PG/Hotels/Lodge"
+                        if (type !== 'Household' && type !== 'Hostel/PG/Hotels/Lodge' && type !== 'University/College/School/Anganwadi') {
+                            popupContent += `
+                                <b>Details on the Type of shop:</b> ${feature.properties['Details on the Type of shop']}<br>
+                                <b>Customer waste disposal point:</b> ${feature.properties['Customer waste disposal point']}<br>
+                            `;
+                        }
+
+                        // Exclude specific properties for Shops, Meat Shops, Street Vendors, Petrol Pumps
+                        if (type !== 'Shop (Permanent Structure)' && type !== 'Meat Shop' && type !== 'Street Vendor (Temporary/Movable Structure)' && type !== 'Petrol pump' && type !== 'University/College/School/Anganwadi') {
+                            popupContent += `
+                                <b>No. of Kitchen:</b> ${feature.properties['No. of Kitchen']}<br>
+                                <b>Total no. of people:</b> ${feature.properties['Total no. of people']}<br>
+                                <b>No. of Male:</b> ${feature.properties['No. of Male']}<br>
+                                <b>No. of Female:</b> ${feature.properties['No. of Female']}<br>
+                            `;
+                        }
+
+                        // Add remaining properties that apply to all types
+                        popupContent += `
+                            <b>Type of waste generated:</b> ${feature.properties['Type of waste generated']}<br>
+                            <b>Bulk waste generator:</b> ${feature.properties['Bulk waste generator']}<br>
+                            <b>Quantity of total Waste Generated Daily (in KGs):</b> ${feature.properties['Quantity of total Waste Generated Daily (in KGs)']}<br>
+                            <b>Quantity of Wet Waste Generated Daily (in KGs):</b> ${feature.properties['Quantity of Wet Waste Generated Daily (in KGs)']}<br>
+                            <b>Wet waste disposal method:</b> ${feature.properties['Wet waste disposal method']}<br>
+                            <b>Quantity of Dry Waste Generated Daily (in KGs):</b> ${feature.properties['Quantity of Dry Waste Generated Daily. (in KGs)']}<br>
+                            <b>Dry waste disposal method:</b> ${feature.properties['Dry waste disposal method']}<br>
+                            <b>Quantity of Medical Waste Generated Daily (in KGs):</b> ${feature.properties['Quantity of Medical Waste Generated Daily (in KGs)']}<br>
+                            <b>Medical waste disposal method:</b> ${feature.properties['Medical waste disposal method']}<br>
+                            <b>Quantity of Hazardous/Chemical Waste Generated Daily (in KGs):</b> ${feature.properties['Quantity of Hazardous/Chemical Waste Generated Daily (in KGs)']}<br>
+                            <b>Hazardous/Chemical waste disposal method:</b> ${feature.properties['Hazardous/Chemical waste disposal method']}<br>
+                            <b>Quantity of Construction Waste Generated Daily (in KGs):</b> ${feature.properties['Quantity of Construction Waste Generated Daily (in KGs)']}<br>
+                            <b>Construction/Demolition waste disposal method:</b> ${feature.properties['Construction/Demolition waste disposal method']}<br>
+                            <b>Quantity of E-Waste Generated Daily (in KGs):</b> ${feature.properties['Quantity of E-Waste Generated Daily (in KGs)']}<br>
+                            <b>E-Waste disposal method:</b> ${feature.properties['E-Waste disposal method']}<br>
+                            <b>Waste sold to Kabadi Walas/ Gujri / Bhangarwalas / Pheriwalas / Raddiwalas?:</b> ${feature.properties['Waste sold to Kabadi Walas/ Gujri / Bhangarwalas / Pheriwalas / Raddiwalas?']}<br>
+                            <b>Potential houses for organic waste composting:</b> ${feature.properties['Potential houses for organic waste composting']}<br>
+                            <b>Knowledge on panchayat waste disposal method and location:</b> ${feature.properties['Knowledge on panchayat waste disposal method and location']}<br>
+                            <b>Problems faced with waste disposal:</b> ${feature.properties['Problems faced with waste disposal']}<br>
+                            <b>Perception of waste disposal responsibility:</b> ${feature.properties['Perception of waste disposal responsibility']}<br>
+                            <b>Perception of waste disposal responsibility (Actual Response):</b> ${feature.properties['Perception of waste disposal responsibility (Actual)']}<br>
+                            <b>Suggestions shared on improving waste management?:</b> ${feature.properties['Suggestions shared on improving waste management?']}<br>
+                            <b>Respondent's Phone Number:</b> ${feature.properties['Respondent\'s Phone Number']}<br>
+                        `;
+
+                        if (feature.properties['Picture URL'] && feature.properties['Picture URL'].trim() !== '') {
+                            popupContent += `<b>Picture URL:</b> <a href="${feature.properties['Picture URL']}" target="_blank">View Image</a><br>`;
+                        }
+
+                        // Conditionally add Video URL if it exists
+                        if (feature.properties['Video URL'] && feature.properties['Video URL'].trim() !== '') {
+                            popupContent += `<b>Video URL:</b> <a href="${feature.properties['Video URL']}" target="_blank">View Video</a><br>`;
+                        }
+
+                        layer.bindPopup(popupContent, { maxWidth: 800, minWidth: 500 });
+                        allMarkers.push({
+                            layer: layer,
+                            properties: feature.properties
+                        });
+                    }
+                }).addTo(map);
+            });
+
+
+        // Show range value for the slider
+        function showRangeValue(value, elementId) {
+            document.getElementById(elementId).innerHTML = value;
+            filterMarkers();
+        }
+
+
+        // Filter markers based on the selected filters
+        function filterMarkers() {
+            let selectedWasteType = document.getElementById('wasteType').value.toLowerCase();
+            let selectedGenerator = document.getElementById('wasteGenerator').value.toLowerCase();
+            let selectedResponsibility = document.getElementById('responsibility').value.toLowerCase();
+            let selectedWasteKgs = parseInt(document.getElementById('wasteKgsRange').value);
+            let selectedWetWasteKgs = parseInt(document.getElementById('WetwasteKgsRange').value);
+            let selectedDryWasteKgs = parseInt(document.getElementById('DrywasteKgsRange').value);
+            let selectedWetWasteDisposal = document.getElementById('wetWasteDisposal').value.toLowerCase();
+            let selectedDryWasteDisposal = document.getElementById('dryWasteDisposal').value.toLowerCase();
+            let selectedBulkWasteGenerator = document.getElementById('bulkWasteGenerator').value.toLowerCase();
+            let selectedMedicalWasteDisposal = document.getElementById('medicalWasteDisposal').value.toLowerCase();
+            let selectedHazardousWasteDisposal = document.getElementById('hazardousWasteDisposal').value.toLowerCase();
+            let selectedEWasteDisposal = document.getElementById('eWasteDisposal').value.toLowerCase();
+            let selectedConstructionWasteDisposal = document.getElementById('constructionWasteDisposal').value.toLowerCase();
+            let selectedWasteSoldToKabadi = document.getElementById('wasteSoldToKabadi').value.toLowerCase();
+            let selectedOrganicWasteComposting = document.getElementById('organicWasteComposting').value.toLowerCase();
+            let selectedPanchayatWasteKnowledge = document.getElementById('panchayatWasteKnowledge').value.toLowerCase();
+            let selectedWasteDisposalProblems = document.getElementById('wasteDisposalProblems').value.toLowerCase();
+
+
+            geojsonLayer.clearLayers();
+
+            allMarkers.forEach(item => {
+                let properties = item.properties;
+                let matchesWasteType = !selectedWasteType || (properties['Type of waste generated'] && properties['Type of waste generated'].toLowerCase().includes(selectedWasteType));
+                let matchesGenerator = !selectedGenerator || (properties['Type of Waste Generator'] && properties['Type of Waste Generator'].toLowerCase().includes(selectedGenerator));
+                let matchesResponsibility = !selectedResponsibility || (properties['Perception of waste disposal responsibility'] && properties['Perception of waste disposal responsibility'].toLowerCase().includes(selectedResponsibility));
+                let matchesWasteKgs = properties['Quantity of total Waste Generated Daily (in KGs)'] <= selectedWasteKgs;
+                let matchesWetWasteKgs = properties['Quantity of Wet Waste Generated Daily (in KGs)'] <= selectedWetWasteKgs;
+                let matchesDryWasteKgs = properties['Quantity of Dry Waste Generated Daily. (in KGs)'] <= selectedDryWasteKgs;
+                let matchesBulkWasteGenerator = !selectedBulkWasteGenerator || (properties['Bulk waste generator'] && properties['Bulk waste generator'].toLowerCase() === selectedBulkWasteGenerator);
+                let matchesWetWasteDisposal = !selectedWetWasteDisposal || (properties['Wet waste disposal method'] && properties['Wet waste disposal method'].toLowerCase().includes(selectedWetWasteDisposal));
+                let matchesDryWasteDisposal = !selectedDryWasteDisposal || (properties['Dry waste disposal method'] && properties['Dry waste disposal method'].toLowerCase().includes(selectedDryWasteDisposal));
+                let matchesMedicalWasteDisposal = !selectedMedicalWasteDisposal || (properties['Medical waste disposal method'] && properties['Medical waste disposal method'].toLowerCase().includes(selectedMedicalWasteDisposal));
+                let matchesHazardousWasteDisposal = !selectedHazardousWasteDisposal || (properties['Hazardous/Chemical waste disposal method'] && properties['Hazardous/Chemical waste disposal method'].toLowerCase().includes(selectedHazardousWasteDisposal));
+                let matchesEWasteDisposal = !selectedEWasteDisposal || (properties['E-Waste disposal method'] && properties['E-Waste disposal method'].toLowerCase().includes(selectedEWasteDisposal));
+                let matchesConstructionWasteDisposal = !selectedConstructionWasteDisposal || (properties['Construction/Demolition waste disposal method'] && properties['Construction/Demolition waste disposal method'].toLowerCase().includes(selectedConstructionWasteDisposal));
+                let matchesWasteSoldToKabadi = !selectedWasteSoldToKabadi || (properties['Waste sold to Kabadi Walas/ Gujri / Bhangarwalas / Pheriwalas / Raddiwalas?'] && properties['Waste sold to Kabadi Walas/ Gujri / Bhangarwalas / Pheriwalas / Raddiwalas?'].toLowerCase().includes(selectedWasteSoldToKabadi));
+                let matchesOrganicWasteComposting = !selectedOrganicWasteComposting || (properties['Potential houses for organic waste composting'] && properties['Potential houses for organic waste composting'].toLowerCase() === selectedOrganicWasteComposting);
+                let matchesPanchayatWasteKnowledge = !selectedPanchayatWasteKnowledge || (properties['Knowledge on panchayat waste disposal method and location'] && properties['Knowledge on panchayat waste disposal method and location'].toLowerCase().includes(selectedPanchayatWasteKnowledge));
+                let matchesWasteDisposalProblems = !selectedWasteDisposalProblems || (properties['Problems faced with waste disposal'] && properties['Problems faced with waste disposal'].toLowerCase().includes(selectedWasteDisposalProblems));
+
+
+                if (matchesWasteType && matchesGenerator && matchesResponsibility && matchesWasteKgs  && matchesBulkWasteGenerator && matchesWetWasteKgs && matchesDryWasteKgs && matchesWetWasteDisposal && matchesDryWasteDisposal  && matchesMedicalWasteDisposal && matchesHazardousWasteDisposal && matchesEWasteDisposal && matchesConstructionWasteDisposal && matchesWasteSoldToKabadi && matchesOrganicWasteComposting && matchesPanchayatWasteKnowledge && matchesWasteDisposalProblems) {
+                    geojsonLayer.addLayer(item.layer);
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>

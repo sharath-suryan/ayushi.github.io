@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "FeatureType": "Village Boundary" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [77.585901, 12.837801],
+            [77.586901, 12.838901],
+            [77.587001, 12.836501],
+            [77.586501, 12.836001],
+            [77.585901, 12.837801]
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "FeatureType": "Lake Boundary" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [77.580001, 12.830001],
+            [77.581001, 12.831001],
+            [77.582001, 12.830001],
+            [77.582001, 12.829001],
+            [77.581001, 12.828001],
+            [77.580001, 12.829001],
+            [77.580001, 12.830001]
+          ]
+        ]
+      }
+    }
+  ]
+}

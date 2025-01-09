@@ -1,0 +1,19 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "FeatureType": "Waste Pickup Route" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.583001, 12.835001],
+          [77.584001, 12.836001],
+          [77.585001, 12.837001],
+          [77.586001, 12.838001],
+          [77.587001, 12.839001]
+        ]
+      }
+    }
+  ]
+}
